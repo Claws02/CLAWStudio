@@ -1,0 +1,266 @@
+id: machine-control-platform
+title: "PLC vs Industrial Arduino vs SBC vs Custom Board"
+subject: Machine Control
+tagline: The same four options. Four different right answers.
+
+# Which aspect ratios to build. Omit to build all three.
+formats: [vertical, horizontal, square]
+
+# ─────────────────────────────────────────────────────────────
+# CRITERIA — the axes. Keep them to things that change a decision.
+# ─────────────────────────────────────────────────────────────
+criteria:
+  - id: determinism
+    name: Determinism
+    hint: Can you promise a worst-case scan time?
+  - id: ruggedness
+    name: Ruggedness
+    hint: Electrical noise, temperature, vibration
+  - id: dev-speed
+    name: Dev Speed
+    hint: Idea to working machine
+  - id: serviceability
+    name: Serviceability
+    hint: Can the plant's tech fix it at 2am without you?
+  - id: unit-cost
+    name: Unit Cost
+    hint: Higher rating = cheaper per unit
+  - id: io-flex
+    name: I/O Flexibility
+    hint: Odd sensors, high channel counts, custom interfaces
+
+# ─────────────────────────────────────────────────────────────
+# CONTENDERS — ratings are 1-5, your editorial call, per criterion.
+# ─────────────────────────────────────────────────────────────
+contenders:
+  - id: plc
+    name: Compact PLC
+    tagline: The boring answer that keeps the line running
+    specs:
+      Scan time: Deterministic, sub-ms typical
+      Environment: Panel-rated, industrial temp
+      Programming: Ladder / ST, IEC 61131-3
+      Field support: Any controls tech
+      Unit cost: "$$$"
+    ratings:
+      determinism: 5
+      ruggedness: 5
+      dev-speed: 3
+      serviceability: 5
+      unit-cost: 2
+      io-flex: 3
+    strengths:
+      - Failure modes are well understood and documented
+      - Replacement parts are a phone call, not a redesign
+    weaknesses:
+      - Anything outside standard I/O gets expensive fast
+
+  - id: ind-arduino
+    name: Industrial MCU Module
+    tagline: DIN-rail microcontroller with real I/O
+    specs:
+      Scan time: Deterministic if you write it that way
+      Environment: DIN-rail, industrial temp
+      Programming: C++ / Arduino, some IEC support
+      Field support: You, mostly
+      Unit cost: "$$"
+    ratings:
+      determinism: 4
+      ruggedness: 4
+      dev-speed: 4
+      serviceability: 3
+      unit-cost: 3
+      io-flex: 4
+    strengths:
+      - Bridges prototyping speed and panel-ready hardware
+    weaknesses:
+      - Smaller install base means fewer techs who know it
+
+  - id: sbc
+    name: Linux SBC
+    tagline: Full OS, networking, and a filesystem to corrupt
+    specs:
+      Scan time: Non-deterministic without an RT patch
+      Environment: Commercial temp unless you spend
+      Programming: Anything you want
+      Field support: IT-adjacent skillset
+      Unit cost: "$$"
+    ratings:
+      determinism: 2
+      ruggedness: 2
+      dev-speed: 5
+      serviceability: 2
+      unit-cost: 3
+      io-flex: 5
+    strengths:
+      - Networking, logging, and dashboards come free
+      - Best option when the job is really data, not control
+    weaknesses:
+      - Power-loss filesystem corruption is a real field failure
+      - "Non-deterministic timing: never the safety path"
+
+  - id: custom
+    name: Custom MCU Board
+    tagline: Exactly the I/O you need, and nothing else
+    specs:
+      Scan time: Deterministic, fully under your control
+      Environment: Whatever you design for
+      Programming: Bare metal / RTOS
+      Field support: Only you
+      Unit cost: "$ at volume"
+    ratings:
+      determinism: 5
+      ruggedness: 4
+      dev-speed: 1
+      serviceability: 1
+      unit-cost: 5
+      io-flex: 5
+    strengths:
+      - Cheapest per unit once volume justifies the NRE
+    weaknesses:
+      - Months of schedule and a spin risk before it works
+      - You are the entire support organization
+
+# ─────────────────────────────────────────────────────────────
+# SCENARIOS — the "it depends". Re-weight the criteria and the
+# ranking changes. weight 0 or omitted = doesn't matter here.
+# ─────────────────────────────────────────────────────────────
+scenarios:
+  - id: line-retrofit
+    name: Production Line Retrofit
+    context: Existing line, plant techs on shift, downtime measured in dollars per minute.
+    weights:
+      determinism: 5
+      ruggedness: 5
+      serviceability: 5
+      dev-speed: 2
+      unit-cost: 1
+      io-flex: 2
+    verdict:
+      winner: plc
+      why: >-
+        You aren't buying a controller, you're buying the plant's ability to fix
+        it without you. Serviceability and determinism carry everything here,
+        and unit cost is noise next to an hour of downtime.
+      avoid: sbc
+      avoidWhy: a power blip corrupts the filesystem and nobody on shift can recover it
+
+  - id: test-fixture
+    name: One-Off Test Fixture
+    context: Quantity one, lives on a bench, needs to work by Friday.
+    weights:
+      dev-speed: 5
+      io-flex: 4
+      determinism: 1
+      ruggedness: 1
+      serviceability: 1
+      unit-cost: 2
+    verdict:
+      winner: sbc
+      why: >-
+        Nothing here is safety-rated and nobody else has to maintain it. Buy the
+        fastest path to a working fixture and spend the saved days on the test
+        itself.
+      avoid: custom
+      avoidWhy: months of NRE to save money you'll never spend at quantity one
+
+  - id: volume-product
+    name: Shipping Product at Volume
+    context: Thousands of units, fixed I/O, margin is the whole business.
+    weights:
+      unit-cost: 5
+      determinism: 4
+      io-flex: 4
+      ruggedness: 3
+      dev-speed: 1
+      serviceability: 1
+    verdict:
+      winner: custom
+      why: >-
+        At volume the NRE amortises to nothing and every dollar of BOM is pure
+        margin. This is the one case where the hard path is the cheap path.
+      avoid: plc
+      avoidWhy: you'd be shipping someone else's margin inside every unit
+
+  - id: field-logger
+    name: Remote Field Data Logger
+    context: Unattended, cellular backhaul, a dozen sites, serviced twice a year if you're lucky.
+    weights:
+      ruggedness: 5
+      io-flex: 4
+      dev-speed: 4
+      unit-cost: 3
+      serviceability: 1
+      # determinism omitted on purpose — nothing here is a control loop
+    verdict:
+      winner: ind-arduino
+      why: >-
+        The job is acquisition and uptime, not control loops. You want panel-grade
+        hardware and low power without an OS that has to be shut down cleanly.
+      avoid: sbc
+      avoidWhy: unattended plus unclean power-down is how you lose a season of data
+
+# ─────────────────────────────────────────────────────────────
+# SCENES — the running order.
+#
+# `voice: voice/<file>.m4a`  → scene length snaps to the real audio.
+# `duration: 6`              → force a length in seconds.
+# neither                    → estimated from word count.
+#
+# `formats: [vertical]`      → scene only appears in that aspect ratio.
+# omit `formats`             → scene appears in all of them.
+#
+# That's how this one file produces a ~55s short AND a full 16:9 cut:
+# the short keeps the hook, two scenarios and the payoff; the long version
+# gets the spec table, the head-to-head and all four scenarios.
+# ─────────────────────────────────────────────────────────────
+scenes:
+  - type: hook
+    text: There is no best controller.
+    sub: Four options, four jobs, four different right answers — and the wrong one costs you a season or a product line.
+
+  - type: lineup
+    title: The four you'll actually consider
+    formats: [horizontal, square]
+
+  - type: spec
+    title: Only the specs that change a decision
+    rows: [Scan time, Environment, Field support, Unit cost]
+    formats: [horizontal]
+
+  - type: versus
+    a: plc
+    b: sbc
+    title: The argument everyone has
+    formats: [horizontal]
+
+  # Retrofit and volume are the sharpest contrast — those two carry the short.
+  - type: scenario
+    id: line-retrofit
+
+  - type: scenario
+    id: test-fixture
+    formats: [horizontal, square]
+
+  - type: scenario
+    id: volume-product
+
+  - type: scenario
+    id: field-logger
+    formats: [horizontal]
+
+  - type: scorecard
+    title: Same four parts. Four different winners.
+
+  - type: takeaway
+    title: How to actually pick
+    formats: [horizontal, square]
+    bullets:
+      - Decide who maintains it before you decide what to buy — serviceability is a spec.
+      - If a timing miss can hurt someone, the answer is deterministic hardware. Full stop.
+      - Unit cost only matters above the volume where NRE amortises. Below it, schedule is the cost.
+      - An OS is a liability anywhere power can be pulled without warning.
+
+  - type: outro
+    text: Which one would you spec?
+    sub: Tell me the constraint I got wrong.

@@ -1,0 +1,39 @@
+{
+  "name": "clawengineering-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CLAW Engineering video studio — data-driven, code-rendered comparison videos.",
+  "type": "module",
+  "scripts": {
+    "content": "node scripts/build-content.mjs",
+    "content:watch": "node scripts/build-content.mjs --watch",
+    "new": "node scripts/new-video.mjs",
+    "prestudio": "npm run content",
+    "studio": "remotion studio",
+    "preweb": "npm run content",
+    "web": "vite",
+    "prerender": "npm run content",
+    "render": "node scripts/render.mjs",
+    "prebuild:web": "npm run content",
+    "build:web": "vite build",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run content && npm run typecheck"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.509",
+    "@remotion/fonts": "4.0.509",
+    "@remotion/media-utils": "4.0.509",
+    "@remotion/player": "4.0.509",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.509"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "js-yaml": "^4.1.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.6",
+    "zod": "^4.4.3"
+  }
+}

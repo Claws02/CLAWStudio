@@ -1,0 +1,9 @@
+# Channel-wide settings. Applies to every video.
+name: CLAW Engineering
+handle: "@clawengineering"
+tagline: Real answers for real constraints.
+accent: "#FFB020"
+
+# Words per second used to estimate scene length when a scene has no voiceover.
+# Recorded audio always overrides this. Lower = slower, longer scenes.
+readingRate: 2.6

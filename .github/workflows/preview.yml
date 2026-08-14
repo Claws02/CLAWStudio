@@ -1,0 +1,61 @@
+name: Deploy preview
+
+# Publishes the iPad-friendly preview player to GitHub Pages so you can watch
+# animations in Safari right after pushing a content edit.
+#
+# NOTE: GitHub Pages on a PRIVATE repository requires a paid plan. On a free
+# private repo this job will fail at the deploy step — that's expected. Either
+# make the repo public, upgrade, or just use `npm run web` locally instead.
+# Everything else in this repo works either way.
+on:
+  push:
+    branches: [main, claude/claw-engineering-studio-vhh5vf]
+    paths:
+      - 'content/**'
+      - 'src/**'
+      - 'web/**'
+      - 'public/**'
+      - 'vite.config.ts'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run content
+      - name: Build preview
+        # Pages serves from /<repo>/, so the asset + staticFile base must match.
+        run: npx vite build
+        env:
+          PREVIEW_BASE: /${{ github.event.repository.name }}/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

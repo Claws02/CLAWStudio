@@ -1,0 +1,9 @@
+node_modules/
+out/
+dist/
+.remotion/
+src/content/generated.ts
+*.log
+.DS_Store
+.env
+.env.local

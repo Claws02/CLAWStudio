@@ -1,0 +1,57 @@
+name: Render video
+
+# Manual on purpose. Rendering a 3-minute 1080p cut takes real CI minutes, so
+# it runs when you ask for it — not on every content tweak.
+on:
+  workflow_dispatch:
+    inputs:
+      video:
+        description: 'Video id (blank = all videos)'
+        required: false
+        type: string
+      format:
+        description: 'Aspect ratio'
+        required: true
+        default: all
+        type: choice
+        options: [all, vertical, horizontal, square]
+
+concurrency:
+  group: render-${{ inputs.video || 'all' }}-${{ inputs.format }}
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Validate content
+        run: npm run content
+
+      - name: Render
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.video }}" ]; then ARGS="$ARGS ${{ inputs.video }}"; fi
+          if [ "${{ inputs.format }}" != "all" ]; then ARGS="$ARGS ${{ inputs.format }}"; fi
+          echo "rendering:$ARGS"
+          node scripts/render.mjs $ARGS
+
+      - name: Upload MP4s
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-${{ inputs.video || 'all' }}-${{ inputs.format }}
+          path: out/*.mp4
+          # Long enough to download on your own schedule, short enough not to
+          # eat the storage quota with 15 MB files.
+          retention-days: 14
+          if-no-files-found: error
