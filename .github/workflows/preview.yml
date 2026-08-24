@@ -1,22 +1,15 @@
 name: Deploy preview
 
-# Publishes the iPad-friendly preview player to GitHub Pages so you can watch
-# animations in Safari right after pushing a content edit.
+# Optional GitHub Pages deploy, kept on manual dispatch only.
 #
-# NOTE: GitHub Pages on a PRIVATE repository requires a paid plan. On a free
-# private repo this job will fail at the deploy step — that's expected. Either
-# make the repo public, upgrade, or just use `npm run web` locally instead.
-# Everything else in this repo works either way.
+# The studio deploys to Cloudflare Pages instead (see docs/DEPLOY.md): Pages on
+# a PRIVATE repository requires a paid GitHub plan, and that paywall would sit
+# in front of the whole studio rather than just a video preview.
+#
+# This workflow stays so the option is still there if Pages is ever enabled —
+# but it no longer runs on push, so it can't sit permanently red. The studio
+# bundle is still built on every push by the Validate workflow.
 on:
-  push:
-    branches: [main, claude/claw-engineering-studio-vhh5vf]
-    paths:
-      - 'content/**'
-      - 'src/**'
-      - 'web/**'
-      - 'public/**'
-      - 'vite.config.ts'
-      - 'package-lock.json'
   workflow_dispatch:
 
 permissions:

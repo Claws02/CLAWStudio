@@ -35,8 +35,8 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Validate content
-        run: npm run content
+      - name: Build + validate models
+        run: npm run build
 
       - name: Render
         run: |

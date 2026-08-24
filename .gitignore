@@ -3,6 +3,7 @@ out/
 dist/
 .remotion/
 src/content/generated.ts
+studio/generated/
 *.log
 .DS_Store
 .env

@@ -1,0 +1,16 @@
+{
+  "name": "CLAW Studio",
+  "short_name": "CLAW",
+  "description": "Design, simulate, write and cut video from one workspace.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07090B",
+  "theme_color": "#07090B",
+  "icons": [
+    { "src": "./icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "./apple-touch-icon.png", "type": "image/png", "sizes": "180x180" },
+    { "src": "./icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
+  ]
+}

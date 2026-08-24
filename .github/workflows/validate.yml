@@ -1,7 +1,8 @@
 name: Validate
 
-# Cheap and runs on every push: catches broken YAML, dangling ids, and verdicts
-# that contradict their own weights before you burn CI minutes on a render.
+# Cheap and runs on every push: catches broken YAML, dangling ids, dangling
+# cross-surface references, and verdicts that contradict their own weights —
+# before you burn CI minutes on a render.
 on:
   push:
     branches: ['**']
@@ -18,9 +19,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Build + validate content
-        run: npm run content
+      - name: Build + validate models
+        run: npm run build
       - name: Typecheck
         run: npm run typecheck
-      - name: Build preview bundle
+      - name: Build studio bundle
         run: npx vite build
