@@ -99,6 +99,9 @@ button { cursor:pointer; }
   .mark { display:none; }
   .rail-spacer { display:none; }
   .rail-btn { width:auto; flex:1; }
+  /* Too narrow for a path to earn its space — the filename alone is the label. */
+  .tree .dir { display:none; }
+  .tree .base { flex:0 1 auto; min-width:0; }
 }
 
 /* ---------- shared bits ---------- */
@@ -173,8 +176,11 @@ button { cursor:pointer; }
   padding:8px 11px; font-family:var(--mono); font-size:12.5px;
 }
 .tree .filter input:focus { border-color:var(--accent); outline:none; }
-.tree ul { list-style:none; margin:0; padding:6px; overflow:auto; flex:1; -webkit-overflow-scrolling:touch; }
-.tree li { margin:0; }
+.tree ul { list-style:none; margin:0; padding:6px; overflow-y:auto; overflow-x:hidden; flex:1;
+  -webkit-overflow-scrolling:touch; }
+/* overflow-x must be hidden, not auto: otherwise a long name widens the list and
+   scrolls sideways instead of ellipsising. */
+.tree li { margin:0; min-width:0; }
 .tree button {
   width:100%; text-align:left; appearance:none; background:transparent; border:none;
   color:var(--mid); font-family:var(--mono); font-size:12.5px; padding:7px 9px; border-radius:6px;
@@ -185,8 +191,11 @@ button { cursor:pointer; }
 .tree .kind { width:6px; height:6px; border-radius:50%; flex:none; }
 .tree .name { display:flex; min-width:0; flex:1; gap:0; align-items:baseline; }
 /* The filename always survives; the directory is what gets clipped. */
-.tree .dir { color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:0 1 auto; }
-.tree .base { flex:none; white-space:nowrap; }
+.tree .dir { color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  flex:0 1 auto; min-width:0; }
+/* The filename never shrinks — the directory is what gives way. Letting both
+   compete for space costs you the extension, which is the half you scan by. */
+.tree .base { flex:0 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .tree .dirty { color:var(--accent); flex:none; }
 .tree .count {
   padding:8px 12px; font-family:var(--mono); font-size:10.5px; color:var(--dim);
