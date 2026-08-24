@@ -1,6 +1,7 @@
 # CLAW Studio — Architecture Deep Dive
 
-> **Status:** proposal, not built. Written 2026-08-24 against commit `1549889`.
+> **Status:** Phase 0 is built (see §10). Everything from Phase 1 on is still a
+> proposal. Written 2026-08-24 against commit `1549889`.
 > **Question it answers:** can design, simulation, video, spreadsheet, documents,
 > and a code editor live in *one* studio that runs from an iPad — and if so, what
 > is the shape of the thing?
@@ -191,9 +192,18 @@ The README already flags it — **Pages on a private repo requires a paid plan**
 and `preview.yml` will fail at the deploy step on a free private repo. That
 paywall now sits in front of the entire studio, not just a video preview.
 
-**Recommendation: Cloudflare Pages.** Free tier, private repos fine, custom
-domain, and it unlocks the Workers-based auth broker above without adding a
-vendor. Keep `preview.yml` as a build-only job or delete it.
+**Decided: Cloudflare Pages, repo stays private.** Free tier, private repos
+fine, custom domain, and it unlocks the Workers-based auth broker above without
+adding a vendor. Settings are in [DEPLOY.md](DEPLOY.md). `preview.yml` is now
+manual-dispatch only, so it can't sit permanently red; Validate still builds the
+studio bundle on every push.
+
+**Why not just make the repo public?** It would genuinely work — Pages is free
+there and Actions minutes become unlimited, which matters for Tier-2 renders.
+It's still the wrong trade: this repo is about to hold cost models, BOMs, spec
+sheets and unreleased video takes with your editorial ratings in them. Staying
+private costs the 2,000 free Actions minutes a month (roughly 30–60 renders); if
+that binds, buying minutes is far cheaper than publishing the work.
 
 ---
 
@@ -260,7 +270,13 @@ Change a rating, the document is already correct.
 Semantic check: dangling refs, figures with no caption, a revision block that
 doesn't match the commit.
 
-### 5.4 Design — parametric, not freehand
+### 5.4 Design — parametric first, freehand later
+
+**Decided:** both, engineering first. The parametric surface gets built as
+described below; a looser drawing mode for thumbnails and explainer diagrams
+comes after it, on the same canvas, rather than as a second room.
+
+
 
 Artboards as declarative SVG (`*.design.yaml` → SVG), with direct manipulation on
 canvas. Component library, snapping, dimensions that can come from the spine.
@@ -406,7 +422,7 @@ the whole premise holds.
 
 ---
 
-## 8. Decisions this proposal makes
+## 8. Decision register
 
 | # | Decision | Because |
 |---|---|---|
@@ -415,23 +431,53 @@ the whole premise holds.
 | D3 | Four compute tiers; iPad never starts a slow-failing job | The only way an iPad-first studio stays honest |
 | D4 | GitHub REST API for writes, not isomorphic-git | Verified: browser push needs your own CORS proxy |
 | D5 | OPFS as write-ahead cache before every sync | Safari kills tabs; losing work once kills trust |
-| D6 | Move hosting to Cloudflare Pages | Pages+private repo is paywalled; unlocks the auth Worker |
+| D6 | Cloudflare Pages, repo stays private | Pages+private repo is paywalled; going public would expose cost models and unreleased takes |
 | D7 | CodeMirror 6 for all text editing | Verified: Monaco is unusable on iPadOS |
 | D8 | Write the formula engine; avoid HyperFormula | Verified: GPLv3-or-commercial poisons a commercial product |
-| D9 | Avoid tldraw; parametric SVG for Design | Verified: watermark/licence key required in production |
+| D9 | Parametric SVG for Design, freehand later; avoid tldraw | Panels and pinouts need precision; tldraw needs a watermark or licence key in production |
 | D10 | Python and Verilog live in CI, never in the iPad | Verified: Pyodide is heavy and iOS wasm-gc is broken |
 | D11 | Remotion stays confined to the Video room + CI | Licence is per-seat above 3 people; contain the blast radius |
 | D12 | Every surface gets a semantic check, not just a schema check | It's the best idea already in this repo |
 
 ---
 
-## 9. Verified vs unverified
+## 9. Phase 0 — what is actually built
+
+Built and driven in a browser, not just written:
+
+| Piece | Where | What it does |
+|---|---|---|
+| Spine | `studio/spine/` | Model kinds, the ref parser and resolver, cycle detection, the shared diagnostic shape |
+| Build | `scripts/build.mjs` + `scripts/compilers/` | One compiler registry, one report, one exit code. The old `build-content.mjs` is now the video compiler, moved rather than rewritten |
+| Ref checking | `scripts/build.mjs` | `video://…#…` refs are resolved at build time; a dangling one fails the build |
+| Shell | `studio/shell/` | Rail, lazy room routing, status bar, token sheet. Rooms that aren't built say what they'll be |
+| Write path | `studio/shell/fs/` | OPFS draft cache → GitHub REST (or the local checkout in dev). Draft state is broadcast so the status bar can't lie |
+| Code room | `studio/rooms/code/` | CodeMirror 6, per-file language chunks, filter, draft indicators, commit and revert |
+| Video room | `studio/rooms/video/` | The previous preview, now a room. Remotion imported nowhere else |
+| Install | `web/index.html`, `public/` | Manifest, icons, standalone display — Add to Home Screen works |
+
+Measured bundle after splitting: shell **71 KB gz**, Code room **132 KB gz**,
+Video room **89 KB gz**, language packs 5–39 KB gz each and only fetched for the
+file type you open.
+
+**Not yet done in Phase 0:** dispatching a Tier-2 render from the studio. The
+API call exists (`dispatchWorkflow` in `fs/github.ts`) and is unused — it wants a
+jobs panel to be worth surfacing, which belongs with the Sim room in Phase 2.
+
+---
+
+## 10. Verified vs unverified
 
 **Verified in this session**
-- Repo builds clean at `1549889`: `npm ci`, `npm run content` (1 video, 0
-  warnings), `tsc --noEmit`, and `vite build` all exit 0.
-- Bundle size measured, not estimated: `dist/assets/index-*.js` = 487.83 KB raw,
-  153.20 KB gzipped.
+- Repo built clean at `1549889` before any changes: `npm ci`, content build
+  (1 video, 0 warnings), `tsc --noEmit`, `vite build` all exit 0. Baseline
+  bundle measured at 487.83 KB raw / 153.20 KB gzipped.
+- Phase 0 builds clean: `npm run build`, `npm run typecheck`, `vite build`.
+- Phase 0 driven in headless Chromium at iPad viewport: all six rooms reachable,
+  a YAML model opened and edited, the draft written to OPFS and counted in the
+  status bar, **Save** written through to disk and the draft cleared, revert
+  restoring the file, the video player mounting, and no console errors. At
+  430 px wide the page does not scroll sideways.
 - Every file in `src/`, `web/`, `scripts/`, `content/`, `.github/` read in full
   (~2,840 lines total).
 - All external claims in §3.1, §4, §5 and §8 checked against current sources,
